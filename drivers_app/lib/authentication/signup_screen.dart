@@ -1,10 +1,9 @@
 import 'dart:io';
 
-import 'package:drivers_app/pages/dashboard.dart';
+import 'package:drivers_app/pages/main_homePage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -160,7 +159,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     };
     userRef.set(driverDataMap);
 
-    Navigator.push(context, MaterialPageRoute(builder: (c) => const Dashboard()));
+    Navigator.push(context, MaterialPageRoute(builder: (c) => const MainHomePage()));
   }
 
   chooseImageFromGallery() async{
