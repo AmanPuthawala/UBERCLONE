@@ -16,8 +16,8 @@ class _HomePageState extends State<HomePage> {
 
   final Completer<GoogleMapController> googleMapCompleterController = Completer<GoogleMapController>();
   GoogleMapController? controllerGoogleMap;
-
   Position? currentPositionOfUser;
+
 
   void updateMapTheme(GoogleMapController controller) {
     getJsonFileFromThemes("themes/aubergine_style.json").then((value)=> setGoogleMapStyle(value, controller));
