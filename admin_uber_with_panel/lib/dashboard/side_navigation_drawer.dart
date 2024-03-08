@@ -67,7 +67,7 @@ class _SideNavigationDrawerState extends State<SideNavigationDrawer> {
             icon: CupertinoIcons.car_detailed,
           ),
           AdminMenuItem(
-              title: "Users",
+              title: "Riders",
               route: UsersPage.id,
               icon: CupertinoIcons.person_2_fill,
           ),

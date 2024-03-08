@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../methods/common_methods.dart';
+
 class UsersPage extends StatefulWidget {
   static const String id = "\webPageUsers";
 
@@ -10,16 +12,47 @@ class UsersPage extends StatefulWidget {
 }
 
 class _UsersPageState extends State<UsersPage> {
+  CommonMethods cMethods = CommonMethods();
+
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text(
-          "Users Page",
-          style: TextStyle(
-              color: Colors.pinkAccent,
-              fontSize: 24
-          ),),
+    return Scaffold(
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                alignment: Alignment.topLeft,
+                child: const Text(
+                  "Manage Riders",
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+
+              const SizedBox(
+                height: 18,
+              ),
+
+              Row(
+                children: [
+                  cMethods.header(2, "RIDER ID"),
+                  cMethods.header(1, "RIDER NAME"),
+                  cMethods.header(1, "RIDER EMAIL"),
+                  cMethods.header(1, "PHONE"),
+                  cMethods.header(1, "ACTION"),
+                ],
+              ),
+
+              //Display data
+
+            ],
+          ),
+        ),
       ),
     );
   }
