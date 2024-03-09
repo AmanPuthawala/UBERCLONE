@@ -1,3 +1,4 @@
+import 'package:admin_uber_with_panel/widgets/users_data_list.dart';
 import 'package:flutter/material.dart';
 
 import '../methods/common_methods.dart';
@@ -41,15 +42,15 @@ class _UsersPageState extends State<UsersPage> {
               Row(
                 children: [
                   cMethods.header(2, "RIDER ID"),
-                  cMethods.header(1, "RIDER NAME"),
-                  cMethods.header(1, "RIDER EMAIL"),
+                  cMethods.header(1, "NAME"),
+                  cMethods.header(1, "EMAIL"),
                   cMethods.header(1, "PHONE"),
                   cMethods.header(1, "ACTION"),
                 ],
               ),
 
               //Display data
-
+              UsersDataList(),
             ],
           ),
         ),
