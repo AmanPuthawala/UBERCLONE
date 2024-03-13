@@ -12,6 +12,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:user_app/authentication/login_screen.dart';
 import 'package:user_app/global/global_var.dart';
 import 'package:user_app/methods/common_methods.dart';
+import 'package:user_app/pages/search_destination_page.dart';
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -250,8 +251,9 @@ class _HomePageState extends State<HomePage> {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   ElevatedButton(
-                    onPressed: (){
-
+                    onPressed: ()
+                    {
+                      Navigator.push(context, MaterialPageRoute(builder: (c)=> SearchDestinationPage()));
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blueGrey,
