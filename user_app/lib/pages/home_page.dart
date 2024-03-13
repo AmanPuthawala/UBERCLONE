@@ -75,7 +75,7 @@ class _HomePageState extends State<HomePage> {
 
           Navigator.push(context, MaterialPageRoute(builder: (c)=> LoginScreen()));
 
-          cMethods.displaySnackBar("you are blocked... Contact admin: admin@gmail.com", context);
+          cMethods.displaySnackBar("you are blocked please... Contact admin: admin@gmail.com", context);
         }
       }
       else {
