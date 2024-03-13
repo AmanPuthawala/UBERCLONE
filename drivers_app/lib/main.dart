@@ -23,6 +23,17 @@ Future<void> main() async{
     }
   });
 
+  // await Permission.notification.isDenied.then((valueOfPermission){
+  //   if(valueOfPermission) {
+  //     Permission.notification.request();
+  //   }
+  // });
+
+  var notificationPermissionStatus = await Permission.notification.status;
+  if (notificationPermissionStatus.isDenied) {
+    await Permission.notification.request();
+  }
+
   await FirebaseAppCheck.instance.activate(
     webProvider: ReCaptchaV3Provider('recaptcha-v3-site-key'),
     androidProvider: AndroidProvider.debug,
@@ -39,12 +50,13 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Drivers App',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: Colors.black,
       ),
-      home: FirebaseAuth.instance.currentUser == null ? const LoginScreen() : const HomePage(),
+      // home: FirebaseAuth.instance.currentUser == null ? const LoginScreen() : const HomePage(),
+      home: LoginScreen(),
     );
   }
 }

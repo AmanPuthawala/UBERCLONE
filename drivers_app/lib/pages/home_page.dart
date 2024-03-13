@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:drivers_app/pushNotification/push_notification_system.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +12,7 @@ import '../global/global_var.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
+  
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -102,6 +104,20 @@ class _HomePageState extends State<HomePage> {
     newTripRequestReference!.onDisconnect();
     newTripRequestReference!.remove();
     newTripRequestReference = null;
+  }
+
+  initializePushNotificationSystem(){
+    PushNotificaionSystem notificaionSystem = PushNotificaionSystem();
+    notificaionSystem.generateDeviceRegistrationToken();
+    notificaionSystem.startListeningForNewNotification();
+}
+
+@override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+
+    initializePushNotificationSystem();
   }
 
   @override
