@@ -1,4 +1,3 @@
-import 'package:drivers_app/notification_channel.dart';
 import 'package:drivers_app/pages/home_page.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';

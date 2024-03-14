@@ -109,7 +109,7 @@ class _HomePageState extends State<HomePage> {
   initializePushNotificationSystem(){
     PushNotificaionSystem notificaionSystem = PushNotificaionSystem();
     notificaionSystem.generateDeviceRegistrationToken();
-    notificaionSystem.startListeningForNewNotification();
+    notificaionSystem.startListeningForNewNotification(context);
     // notificaionSystem.requestingPermission();
 }
 
