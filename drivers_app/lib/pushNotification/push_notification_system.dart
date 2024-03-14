@@ -2,9 +2,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
-class PushNotificaionSystem{
+class PushNotificaionSystem {
   FirebaseMessaging firebaseCloudMessaging = FirebaseMessaging.instance;
-
+  
   Future<String?> generateDeviceRegistrationToken() async{
     String? deviceRecognitionToken = await firebaseCloudMessaging.getToken();
 
@@ -25,7 +25,7 @@ class PushNotificaionSystem{
     FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? messageRemote) {
 
       if(messageRemote != null) {
-        String tripID = messageRemote.data["tripID"];
+        String? tripID = messageRemote.data["tripID"];
       }
 
     });
@@ -35,7 +35,7 @@ class PushNotificaionSystem{
      FirebaseMessaging.onMessage.listen((RemoteMessage? messageRemote) {
 
        if(messageRemote != null) {
-         String tripID = messageRemote.data["tripID"];
+         String? tripID = messageRemote.data["tripID"];
        }
 
      });
@@ -45,7 +45,7 @@ class PushNotificaionSystem{
      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage? messageRemote) {
 
        if(messageRemote != null) {
-         String tripID = messageRemote.data["tripID"];
+         String? tripID = messageRemote.data["tripID"];
        }
 
      });

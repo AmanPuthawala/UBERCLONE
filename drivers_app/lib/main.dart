@@ -1,3 +1,4 @@
+import 'package:drivers_app/notification_channel.dart';
 import 'package:drivers_app/pages/home_page.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -34,6 +35,8 @@ Future<void> main() async{
     await Permission.notification.request();
   }
 
+  // createNotificationChannel();
+
   await FirebaseAppCheck.instance.activate(
     webProvider: ReCaptchaV3Provider('recaptcha-v3-site-key'),
     androidProvider: AndroidProvider.debug,
@@ -55,8 +58,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: Colors.black,
       ),
-      // home: FirebaseAuth.instance.currentUser == null ? const LoginScreen() : const HomePage(),
-      home: LoginScreen(),
+       home: FirebaseAuth.instance.currentUser == null ? const LoginScreen() : const HomePage(),
     );
   }
 }
