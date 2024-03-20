@@ -46,6 +46,9 @@ dependencies:
   permission_handler: ^11.3.0
   image_picker: ^1.0.7
   flutter_launcher_icons: ^0.13.1
+  flutter_geofire:
+  firebase_messaging:
+  flutter_local_notifications:
 
 flutter_launcher_icons:
   android: "launcher_icon"
