@@ -54,6 +54,8 @@ class _HomePageState extends State<HomePage> {
     CameraPosition cameraPosition = CameraPosition(target: possitionOfUserInLatLng, zoom: 15);
     controllerGoogleMap!.animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
 
+    await CommonMethods.convertGeoGraphicCoOrdinatesIntoHumanReadableAddress(currentPositionOfUser!, context);
+
     await getUserInfoAndCheckBlockStatus();
   }
 
