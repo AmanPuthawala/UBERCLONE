@@ -46,6 +46,7 @@ dependencies:
   permission_handler: ^11.3.0
   geolocator: ^11.0.0
   http:
+  provider:
 
 
 #flutter_icons:
