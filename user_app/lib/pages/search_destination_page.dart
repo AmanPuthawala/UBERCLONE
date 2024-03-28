@@ -1,23 +1,20 @@
-import 'dart:math';
-
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:user_app/appInfo/app_info.dart';
 import 'package:user_app/global/global_var.dart';
 import 'package:user_app/methods/common_methods.dart';
 import 'package:user_app/models/prediction_model.dart';
-import 'package:user_app/pages/home_page.dart';
 import 'package:user_app/widgets/prediction_place_ui.dart';
 
-import '../appInfo/app_info.dart';
 
-class SearchDestinationPage extends StatefulWidget
-{
+class SearchDestinationPage extends StatefulWidget {
   const SearchDestinationPage({super.key});
 
   @override
   State<SearchDestinationPage> createState() => _SearchDestinationPageState();
 }
+
+
 
 class _SearchDestinationPageState extends State<SearchDestinationPage>
 {
@@ -25,21 +22,27 @@ class _SearchDestinationPageState extends State<SearchDestinationPage>
   TextEditingController destinationTextEditingController = TextEditingController();
   List<PredictionModel> dropOffPredictionsPlacesList = [];
 
-  ///Google places API- Places Autocomplete
-  searchLocation(String locationName) async{
-    if(locationName.length > 1){
-      String apiPlaceUrl = "https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$locationName&key=$googleMAPKEY&components=country:in";
+  ///Places API - Place AutoComplete
+  searchLocation(String locationName) async
+  {
+    if(locationName.length > 1)
+    {
+      String apiPlacesUrl = "https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$locationName&key=$googleMAPKEY&components=country:in";
 
-      var responseFromPlacesApi = await CommonMethods.sendRequestToAPI(apiPlaceUrl);
+      var responseFromPlacesAPI = await CommonMethods.sendRequestToAPI(apiPlacesUrl);
 
-      if(responseFromPlacesApi == "error"){
+      if(responseFromPlacesAPI == "error")
+      {
         return;
       }
-      if(responseFromPlacesApi["status"] == "OK"){
-        var predictionResultInJson = responseFromPlacesApi["predictions"];
-        var predictionList = (predictionResultInJson as List).map((eachPlacePrediction) => PredictionModel.fromJson(eachPlacePrediction)).toList();
+
+      if(responseFromPlacesAPI["status"] == "OK")
+      {
+        var predictionResultInJson = responseFromPlacesAPI["predictions"];
+        var predictionsList = (predictionResultInJson as List).map((eachPlacePrediction) => PredictionModel.fromJson(eachPlacePrediction)).toList();
+
         setState(() {
-          dropOffPredictionsPlacesList = predictionList;
+          dropOffPredictionsPlacesList = predictionsList;
         });
       }
     }
@@ -82,6 +85,7 @@ class _SearchDestinationPageState extends State<SearchDestinationPage>
                       //icon button - title
                       Stack(
                         children: [
+
                           GestureDetector(
                             onTap: ()
                             {
@@ -98,7 +102,8 @@ class _SearchDestinationPageState extends State<SearchDestinationPage>
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                          )
+                          ),
+
                         ],
                       ),
 
@@ -107,6 +112,7 @@ class _SearchDestinationPageState extends State<SearchDestinationPage>
                       //pickup text field
                       Row(
                         children: [
+
                           Image.asset(
                             "assets/images/initial.png",
                             height: 16,
@@ -122,21 +128,22 @@ class _SearchDestinationPageState extends State<SearchDestinationPage>
                                 borderRadius: BorderRadius.circular(5),
                               ),
                               child: Padding(
-                                padding: EdgeInsets.all(3),
+                                padding: const EdgeInsets.all(3),
                                 child: TextField(
                                   controller: pickUpTextEditingController,
                                   decoration: const InputDecoration(
-                                    hintText: "Pickup Address",
-                                    fillColor: Colors.white10,
-                                    filled: true,
-                                    border: InputBorder.none,
-                                    isDense: true,
-                                    contentPadding: EdgeInsets.only(left: 11, top: 9, bottom: 9)
+                                      hintText: "Pickup Address",
+                                      fillColor: Colors.white12,
+                                      filled: true,
+                                      border: InputBorder.none,
+                                      isDense: true,
+                                      contentPadding: EdgeInsets.only(left: 11, top: 9, bottom: 9)
                                   ),
                                 ),
                               ),
                             ),
                           ),
+
                         ],
                       ),
 
@@ -145,6 +152,7 @@ class _SearchDestinationPageState extends State<SearchDestinationPage>
                       //destination text field
                       Row(
                         children: [
+
                           Image.asset(
                             "assets/images/final.png",
                             height: 16,
@@ -160,15 +168,16 @@ class _SearchDestinationPageState extends State<SearchDestinationPage>
                                 borderRadius: BorderRadius.circular(5),
                               ),
                               child: Padding(
-                                padding: EdgeInsets.all(3),
+                                padding: const EdgeInsets.all(3),
                                 child: TextField(
                                   controller: destinationTextEditingController,
-                                  onChanged: (inputText){
+                                  onChanged: (inputText)
+                                  {
                                     searchLocation(inputText);
                                   },
                                   decoration: const InputDecoration(
                                       hintText: "Destination Address",
-                                      fillColor: Colors.white10,
+                                      fillColor: Colors.white12,
                                       filled: true,
                                       border: InputBorder.none,
                                       isDense: true,
@@ -178,35 +187,40 @@ class _SearchDestinationPageState extends State<SearchDestinationPage>
                               ),
                             ),
                           ),
+
                         ],
                       ),
+
                     ],
                   ),
                 ),
               ),
             ),
 
-            //display predictions results for destination place
+            //display prediction results for destination place
             (dropOffPredictionsPlacesList.length > 0)
                 ? Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                    child: ListView.separated(
-                      padding: const EdgeInsets.all(0),
-                      itemBuilder: (context, index){
-                        return Card(
-                          elevation: 3,
-                          child: PredictionPlaceUI(
-                              predictedPlaceData: dropOffPredictionsPlacesList[index],
-                          ),
-                        );
-                      },
-                      separatorBuilder: (BuildContext context, int index) => const SizedBox(height: 2,),
-                      itemCount: dropOffPredictionsPlacesList.length,
-                      shrinkWrap: true,
-                      physics: const ClampingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              child: ListView.separated(
+                padding: const EdgeInsets.all(0),
+                itemBuilder: (context, index)
+                {
+                  return Card(
+                    elevation: 3,
+                    child: PredictionPlaceUI(
+                      predictedPlaceData: dropOffPredictionsPlacesList[index],
                     ),
-                  )
+                  );
+                },
+                separatorBuilder: (BuildContext context, int index) => const SizedBox(height: 2,),
+                itemCount: dropOffPredictionsPlacesList.length,
+                shrinkWrap: true,
+                physics: const ClampingScrollPhysics(),
+              ),
+            )
                 : Container(),
+
+
           ],
         ),
       ),
