@@ -1,4 +1,6 @@
+import 'package:drivers_app/pages/home_page.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -21,6 +23,19 @@ Future<void> main() async{
     }
   });
 
+  // await Permission.notification.isDenied.then((valueOfPermission){
+  //   if(valueOfPermission) {
+  //     Permission.notification.request();
+  //   }
+  // });
+
+  var notificationPermissionStatus = await Permission.notification.status;
+  if (notificationPermissionStatus.isDenied) {
+    await Permission.notification.request();
+  }
+
+  // createNotificationChannel();
+
   await FirebaseAppCheck.instance.activate(
     webProvider: ReCaptchaV3Provider('recaptcha-v3-site-key'),
     androidProvider: AndroidProvider.debug,
@@ -37,12 +52,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Drivers App',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: Colors.black,
       ),
-      home: const LoginScreen(),
+       home: FirebaseAuth.instance.currentUser == null ? const LoginScreen() : const HomePage(),
     );
   }
 }
