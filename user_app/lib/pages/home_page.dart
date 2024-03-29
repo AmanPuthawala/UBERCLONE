@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
@@ -39,11 +41,14 @@ class _HomePageState extends State<HomePage>
   double bottomMapPadding = 0;
   double rideDetailsContainerHeight = 0;
   DirectionDetails? tripDirectionDetailsInfo;
-
+  List<LatLng> polylineCoOrdinates = [];
+  Set<Polyline> polylineSet = {};
+  Set<Marker> markerSet = {};
+  Set<Circle> circleSet = {};
 
   void updateMapTheme(GoogleMapController controller)
   {
-    getJsonFileFromThemes("themes/night_style.json").then((value)=> setGoogleMapStyle(value, controller));
+    getJsonFileFromThemes("themes/aubergine_style.json").then((value)=> setGoogleMapStyle(value, controller));
   }
 
   Future<String> getJsonFileFromThemes(String mapStylePath) async
@@ -136,6 +141,104 @@ class _HomePageState extends State<HomePage>
     var detailsFromDirectionAPI = await CommonMethods.getDirectionDetailsFromAPI(pickupGeoGraphicCoOrdinates, dropOffDestinationGeoGraphicCoOrdinates);
     setState(() {
       tripDirectionDetailsInfo = detailsFromDirectionAPI;
+    });
+
+    Navigator.pop(context);
+
+    //Draw Routes from pickup to dropOffdestination
+    PolylinePoints pointsPolyline = PolylinePoints();
+    List<PointLatLng> latLngPointsFromPickUpToDestination = pointsPolyline.decodePolyline(tripDirectionDetailsInfo!.encodedPoints!);
+
+    polylineCoOrdinates.clear();
+    if(latLngPointsFromPickUpToDestination.isNotEmpty)
+    {
+      latLngPointsFromPickUpToDestination.forEach((PointLatLng latlngPoint){
+        polylineCoOrdinates.add(LatLng(latlngPoint.latitude, latlngPoint.longitude));
+      });
+    }
+
+    polylineSet.clear();
+    setState(() {
+      Polyline polyline = Polyline(
+        polylineId: const PolylineId("polylineID"),
+        color: Colors.lightBlue,
+        points: polylineCoOrdinates,
+        jointType: JointType.round,
+        width: 6,
+        startCap: Cap.roundCap,
+        endCap: Cap.roundCap,
+        geodesic: true,
+      );
+
+      polylineSet.add(polyline);
+    });
+
+    //Fit the polyline into the map
+    LatLngBounds boundsLatLng;
+    if(pickupGeoGraphicCoOrdinates.latitude > dropOffDestinationGeoGraphicCoOrdinates.latitude
+       && pickupGeoGraphicCoOrdinates.longitude > dropOffDestinationGeoGraphicCoOrdinates.longitude){
+      boundsLatLng = LatLngBounds(southwest: dropOffDestinationGeoGraphicCoOrdinates, northeast: pickupGeoGraphicCoOrdinates);
+    }
+    else if(pickupGeoGraphicCoOrdinates.longitude > dropOffDestinationGeoGraphicCoOrdinates.longitude){
+      boundsLatLng  = LatLngBounds(
+        southwest: LatLng(pickupGeoGraphicCoOrdinates.latitude, dropOffDestinationGeoGraphicCoOrdinates.longitude),
+        northeast: LatLng(dropOffDestinationGeoGraphicCoOrdinates.latitude, pickupGeoGraphicCoOrdinates.longitude),
+      );
+    }
+    else if(pickupGeoGraphicCoOrdinates.latitude > dropOffDestinationGeoGraphicCoOrdinates.latitude){
+      boundsLatLng = LatLngBounds(
+        southwest: LatLng(dropOffDestinationGeoGraphicCoOrdinates.latitude, pickupGeoGraphicCoOrdinates.longitude),
+        northeast: LatLng(pickupGeoGraphicCoOrdinates.latitude, dropOffDestinationGeoGraphicCoOrdinates.longitude),
+      );
+    }
+    else{
+      boundsLatLng = LatLngBounds(southwest: pickupGeoGraphicCoOrdinates, northeast: dropOffDestinationGeoGraphicCoOrdinates);
+    }
+
+    controllerGoogleMap!.animateCamera(CameraUpdate.newLatLngBounds(boundsLatLng, 72));
+
+    //add markers to pickup and dropOffdestination points
+    Marker pickUpPointMarker = Marker(
+      markerId: const MarkerId("pickUpPointMarkerID"),
+      position: pickupGeoGraphicCoOrdinates,
+      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+      infoWindow: InfoWindow(title: pickUpLocation.placeName, snippet: "Location"),
+    );
+
+    Marker dropOffDestinationPointMarker = Marker(
+      markerId: const MarkerId("dropOffDestinationPointMarkerID"),
+      position: dropOffDestinationGeoGraphicCoOrdinates,
+      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+      infoWindow: InfoWindow(title: dropOffDestinationLocation.placeName, snippet: "Destination Location"),
+    );
+
+    setState(() {
+      markerSet.add(pickUpPointMarker);
+      markerSet.add(dropOffDestinationPointMarker);
+    });
+
+    //add circles to pickup and dropOffdestination points
+    Circle pickUpPointCircle = Circle(
+      circleId: const CircleId('pickupCircleID'),
+      strokeColor: Colors.blue,
+      strokeWidth: 4,
+      radius: 14,
+      center: pickupGeoGraphicCoOrdinates,
+      fillColor: Colors.pink,
+    );
+
+    Circle dropOffPointCircle = Circle(
+      circleId: const CircleId('dropOffPointCircleID'),
+      strokeColor: Colors.grey,
+      strokeWidth: 4,
+      radius: 14,
+      center: dropOffDestinationGeoGraphicCoOrdinates,
+      fillColor: Colors.white70,
+    );
+
+    setState(() {
+      circleSet.add(pickUpPointCircle);
+      circleSet.add(dropOffPointCircle);
     });
   }
 
@@ -251,6 +354,9 @@ class _HomePageState extends State<HomePage>
             padding: EdgeInsets.only(top: 26, bottom: bottomMapPadding),
             mapType: MapType.normal,
             myLocationEnabled: true,
+            polylines: polylineSet,
+            markers: markerSet,
+            circles: circleSet,
             initialCameraPosition: googlePlexInitialPosition,
             onMapCreated: (GoogleMapController mapController)
             {
@@ -404,7 +510,7 @@ class _HomePageState extends State<HomePage>
                             width: MediaQuery.of(context).size.width * .70,
                             color: Colors.black45,
                             child: Padding(
-                              padding: const EdgeInsets.only(top: 8, bottom: 8),
+                              padding: const EdgeInsets.only(top: 4, bottom: 4),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
@@ -444,14 +550,14 @@ class _HomePageState extends State<HomePage>
                                     ),
                                   ),
 
-                                  // Text(
-                                  //   (tripDirectionDetailsInfo != null) ? "\$ ${(cMethods.calculateFareAmount(tripDirectionDetailsInfo!)).toString()}" : "",
-                                  //   style: const TextStyle(
-                                  //     fontSize: 18,
-                                  //     color: Colors.white70,
-                                  //     fontWeight: FontWeight.bold,
-                                  //   ),
-                                  // ),
+                                  Text(
+                                    (tripDirectionDetailsInfo != null) ? "\Rs. ${(cMethods.calculateFareAmount(tripDirectionDetailsInfo!)).toString()}" : "",
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.white70,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
 
                                 ],
                               ),

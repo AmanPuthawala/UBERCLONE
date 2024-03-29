@@ -218,9 +218,7 @@ class _SearchDestinationPageState extends State<SearchDestinationPage>
                 physics: const ClampingScrollPhysics(),
               ),
             )
-                : Container(),
-
-
+                : Container()
           ],
         ),
       ),
