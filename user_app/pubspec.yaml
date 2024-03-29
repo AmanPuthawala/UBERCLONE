@@ -48,6 +48,7 @@ dependencies:
   location:
   http:
   provider:
+  flutter_polyline_points:
 
 
 #flutter_icons:
