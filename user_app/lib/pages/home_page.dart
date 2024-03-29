@@ -5,34 +5,34 @@ import 'dart:typed_data';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_geofire/flutter_geofire.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:user_app/appInfo/app_info.dart';
 import 'package:user_app/authentication/login_screen.dart';
 import 'package:user_app/global/global_var.dart';
+import 'package:user_app/global/trip_var.dart';
 import 'package:user_app/methods/common_methods.dart';
 import 'package:user_app/models/direction_details.dart';
 import 'package:user_app/pages/search_destination_page.dart';
 import 'package:user_app/widgets/loading_dialog.dart';
 
-
-class HomePage extends StatefulWidget
-{
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
-
-
-class _HomePageState extends State<HomePage>
-{
-  final Completer<GoogleMapController> googleMapCompleterController = Completer<GoogleMapController>();
+class _HomePageState extends State<HomePage> {
+  final Completer<GoogleMapController> googleMapCompleterController =
+      Completer<GoogleMapController>();
   GoogleMapController? controllerGoogleMap;
   Position? currentPositionOfUser;
   GlobalKey<ScaffoldState> sKey = GlobalKey<ScaffoldState>();
@@ -40,79 +40,81 @@ class _HomePageState extends State<HomePage>
   double searchContainerHeight = 276;
   double bottomMapPadding = 0;
   double rideDetailsContainerHeight = 0;
+  double requestContainerHeight = 0;
+  double tripContainerHeight = 0;
   DirectionDetails? tripDirectionDetailsInfo;
   List<LatLng> polylineCoOrdinates = [];
   Set<Polyline> polylineSet = {};
   Set<Marker> markerSet = {};
   Set<Circle> circleSet = {};
+  bool isDrawerOpened = true;
+  String stateOfApp = "normal";
 
-  void updateMapTheme(GoogleMapController controller)
-  {
-    getJsonFileFromThemes("themes/aubergine_style.json").then((value)=> setGoogleMapStyle(value, controller));
+  void updateMapTheme(GoogleMapController controller) {
+    getJsonFileFromThemes("themes/aubergine_style.json")
+        .then((value) => setGoogleMapStyle(value, controller));
   }
 
-  Future<String> getJsonFileFromThemes(String mapStylePath) async
-  {
+  Future<String> getJsonFileFromThemes(String mapStylePath) async {
     ByteData byteData = await rootBundle.load(mapStylePath);
-    var list = byteData.buffer.asUint8List(byteData.offsetInBytes, byteData.lengthInBytes);
+    var list = byteData.buffer
+        .asUint8List(byteData.offsetInBytes, byteData.lengthInBytes);
     return utf8.decode(list);
   }
 
-  setGoogleMapStyle(String googleMapStyle, GoogleMapController controller)
-  {
+  setGoogleMapStyle(String googleMapStyle, GoogleMapController controller) {
     controller.setMapStyle(googleMapStyle);
   }
 
-  getCurrentLiveLocationOfUser() async
-  {
-    Position positionOfUser = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.bestForNavigation);
+  getCurrentLiveLocationOfUser() async {
+    Position positionOfUser = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.bestForNavigation);
     currentPositionOfUser = positionOfUser;
 
-    LatLng positionOfUserInLatLng = LatLng(currentPositionOfUser!.latitude, currentPositionOfUser!.longitude);
+    LatLng positionOfUserInLatLng = LatLng(
+        currentPositionOfUser!.latitude, currentPositionOfUser!.longitude);
 
-    CameraPosition cameraPosition = CameraPosition(target: positionOfUserInLatLng, zoom: 15);
-    controllerGoogleMap!.animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
+    CameraPosition cameraPosition =
+        CameraPosition(target: positionOfUserInLatLng, zoom: 15);
+    controllerGoogleMap!
+        .animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
 
-    await CommonMethods.convertGeoGraphicCoOrdinatesIntoHumanReadableAddress(currentPositionOfUser!, context);
+    await CommonMethods.convertGeoGraphicCoOrdinatesIntoHumanReadableAddress(
+        currentPositionOfUser!, context);
 
     await getUserInfoAndCheckBlockStatus();
   }
 
-  getUserInfoAndCheckBlockStatus() async
-  {
-    DatabaseReference usersRef = FirebaseDatabase.instance.ref()
+  getUserInfoAndCheckBlockStatus() async {
+    DatabaseReference usersRef = FirebaseDatabase.instance
+        .ref()
         .child("users")
         .child(FirebaseAuth.instance.currentUser!.uid);
 
-    await usersRef.once().then((snap)
-    {
-      if(snap.snapshot.value != null)
-      {
-        if((snap.snapshot.value as Map)["blockStatus"] == "no")
-        {
+    await usersRef.once().then((snap) {
+      if (snap.snapshot.value != null) {
+        if ((snap.snapshot.value as Map)["blockStatus"] == "no") {
           setState(() {
             userName = (snap.snapshot.value as Map)["name"];
           });
-        }
-        else
-        {
+        } else {
           FirebaseAuth.instance.signOut();
 
-          Navigator.push(context, MaterialPageRoute(builder: (c)=> LoginScreen()));
+          Navigator.push(
+              context, MaterialPageRoute(builder: (c) => LoginScreen()));
 
-          cMethods.displaySnackBar("you are blocked. Contact admin: alizeb875@gmail.com", context);
+          cMethods.displaySnackBar(
+              "you are blocked. Contact admin: alizeb875@gmail.com", context);
         }
-      }
-      else
-      {
+      } else {
         FirebaseAuth.instance.signOut();
-        Navigator.push(context, MaterialPageRoute(builder: (c)=> LoginScreen()));
+        Navigator.push(
+            context, MaterialPageRoute(builder: (c) => LoginScreen()));
       }
     });
   }
 
-  displayUserRideDetailsContainer() async
-  {
+  displayUserRideDetailsContainer() async {
     ///Directions API
     await retrieveDirectionDetails();
 
@@ -120,25 +122,34 @@ class _HomePageState extends State<HomePage>
       searchContainerHeight = 0;
       bottomMapPadding = 240;
       rideDetailsContainerHeight = 242;
+      isDrawerOpened = false;
     });
   }
 
-  retrieveDirectionDetails() async
-  {
-    var pickUpLocation = Provider.of<AppInfo>(context, listen: false).pickUpLocation;
-    var dropOffDestinationLocation = Provider.of<AppInfo>(context, listen: false).dropOffLocation;
+  retrieveDirectionDetails() async {
+    var pickUpLocation =
+        Provider.of<AppInfo>(context, listen: false).pickUpLocation;
+    var dropOffDestinationLocation =
+        Provider.of<AppInfo>(context, listen: false).dropOffLocation;
 
-    var pickupGeoGraphicCoOrdinates = LatLng(pickUpLocation!.latitudePosition!, pickUpLocation.longitudePosition!);
-    var dropOffDestinationGeoGraphicCoOrdinates = LatLng(dropOffDestinationLocation!.latitudePosition!, dropOffDestinationLocation.longitudePosition!);
+    var pickupGeoGraphicCoOrdinates = LatLng(
+        pickUpLocation!.latitudePosition!, pickUpLocation.longitudePosition!);
+    var dropOffDestinationGeoGraphicCoOrdinates = LatLng(
+        dropOffDestinationLocation!.latitudePosition!,
+        dropOffDestinationLocation.longitudePosition!);
 
     showDialog(
       barrierDismissible: false,
       context: context,
-      builder: (BuildContext context) => LoadingDialog(messageText: "Getting direction..."),
+      builder: (BuildContext context) =>
+          LoadingDialog(messageText: "Getting direction..."),
     );
 
     ///Directions API
-    var detailsFromDirectionAPI = await CommonMethods.getDirectionDetailsFromAPI(pickupGeoGraphicCoOrdinates, dropOffDestinationGeoGraphicCoOrdinates);
+    var detailsFromDirectionAPI =
+        await CommonMethods.getDirectionDetailsFromAPI(
+            pickupGeoGraphicCoOrdinates,
+            dropOffDestinationGeoGraphicCoOrdinates);
     setState(() {
       tripDirectionDetailsInfo = detailsFromDirectionAPI;
     });
@@ -147,13 +158,14 @@ class _HomePageState extends State<HomePage>
 
     //Draw Routes from pickup to dropOffdestination
     PolylinePoints pointsPolyline = PolylinePoints();
-    List<PointLatLng> latLngPointsFromPickUpToDestination = pointsPolyline.decodePolyline(tripDirectionDetailsInfo!.encodedPoints!);
+    List<PointLatLng> latLngPointsFromPickUpToDestination =
+        pointsPolyline.decodePolyline(tripDirectionDetailsInfo!.encodedPoints!);
 
     polylineCoOrdinates.clear();
-    if(latLngPointsFromPickUpToDestination.isNotEmpty)
-    {
-      latLngPointsFromPickUpToDestination.forEach((PointLatLng latlngPoint){
-        polylineCoOrdinates.add(LatLng(latlngPoint.latitude, latlngPoint.longitude));
+    if (latLngPointsFromPickUpToDestination.isNotEmpty) {
+      latLngPointsFromPickUpToDestination.forEach((PointLatLng latlngPoint) {
+        polylineCoOrdinates
+            .add(LatLng(latlngPoint.latitude, latlngPoint.longitude));
       });
     }
 
@@ -175,41 +187,54 @@ class _HomePageState extends State<HomePage>
 
     //Fit the polyline into the map
     LatLngBounds boundsLatLng;
-    if(pickupGeoGraphicCoOrdinates.latitude > dropOffDestinationGeoGraphicCoOrdinates.latitude
-       && pickupGeoGraphicCoOrdinates.longitude > dropOffDestinationGeoGraphicCoOrdinates.longitude){
-      boundsLatLng = LatLngBounds(southwest: dropOffDestinationGeoGraphicCoOrdinates, northeast: pickupGeoGraphicCoOrdinates);
-    }
-    else if(pickupGeoGraphicCoOrdinates.longitude > dropOffDestinationGeoGraphicCoOrdinates.longitude){
-      boundsLatLng  = LatLngBounds(
-        southwest: LatLng(pickupGeoGraphicCoOrdinates.latitude, dropOffDestinationGeoGraphicCoOrdinates.longitude),
-        northeast: LatLng(dropOffDestinationGeoGraphicCoOrdinates.latitude, pickupGeoGraphicCoOrdinates.longitude),
-      );
-    }
-    else if(pickupGeoGraphicCoOrdinates.latitude > dropOffDestinationGeoGraphicCoOrdinates.latitude){
+    if (pickupGeoGraphicCoOrdinates.latitude >
+            dropOffDestinationGeoGraphicCoOrdinates.latitude &&
+        pickupGeoGraphicCoOrdinates.longitude >
+            dropOffDestinationGeoGraphicCoOrdinates.longitude) {
       boundsLatLng = LatLngBounds(
-        southwest: LatLng(dropOffDestinationGeoGraphicCoOrdinates.latitude, pickupGeoGraphicCoOrdinates.longitude),
-        northeast: LatLng(pickupGeoGraphicCoOrdinates.latitude, dropOffDestinationGeoGraphicCoOrdinates.longitude),
+          southwest: dropOffDestinationGeoGraphicCoOrdinates,
+          northeast: pickupGeoGraphicCoOrdinates);
+    } else if (pickupGeoGraphicCoOrdinates.longitude >
+        dropOffDestinationGeoGraphicCoOrdinates.longitude) {
+      boundsLatLng = LatLngBounds(
+        southwest: LatLng(pickupGeoGraphicCoOrdinates.latitude,
+            dropOffDestinationGeoGraphicCoOrdinates.longitude),
+        northeast: LatLng(dropOffDestinationGeoGraphicCoOrdinates.latitude,
+            pickupGeoGraphicCoOrdinates.longitude),
       );
-    }
-    else{
-      boundsLatLng = LatLngBounds(southwest: pickupGeoGraphicCoOrdinates, northeast: dropOffDestinationGeoGraphicCoOrdinates);
+    } else if (pickupGeoGraphicCoOrdinates.latitude >
+        dropOffDestinationGeoGraphicCoOrdinates.latitude) {
+      boundsLatLng = LatLngBounds(
+        southwest: LatLng(dropOffDestinationGeoGraphicCoOrdinates.latitude,
+            pickupGeoGraphicCoOrdinates.longitude),
+        northeast: LatLng(pickupGeoGraphicCoOrdinates.latitude,
+            dropOffDestinationGeoGraphicCoOrdinates.longitude),
+      );
+    } else {
+      boundsLatLng = LatLngBounds(
+          southwest: pickupGeoGraphicCoOrdinates,
+          northeast: dropOffDestinationGeoGraphicCoOrdinates);
     }
 
-    controllerGoogleMap!.animateCamera(CameraUpdate.newLatLngBounds(boundsLatLng, 72));
+    controllerGoogleMap!
+        .animateCamera(CameraUpdate.newLatLngBounds(boundsLatLng, 72));
 
     //add markers to pickup and dropOffdestination points
     Marker pickUpPointMarker = Marker(
       markerId: const MarkerId("pickUpPointMarkerID"),
       position: pickupGeoGraphicCoOrdinates,
       icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-      infoWindow: InfoWindow(title: pickUpLocation.placeName, snippet: "Location"),
+      infoWindow:
+          InfoWindow(title: pickUpLocation.placeName, snippet: "Location"),
     );
 
     Marker dropOffDestinationPointMarker = Marker(
       markerId: const MarkerId("dropOffDestinationPointMarkerID"),
       position: dropOffDestinationGeoGraphicCoOrdinates,
       icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-      infoWindow: InfoWindow(title: dropOffDestinationLocation.placeName, snippet: "Destination Location"),
+      infoWindow: InfoWindow(
+          title: dropOffDestinationLocation.placeName,
+          snippet: "Destination Location"),
     );
 
     setState(() {
@@ -242,6 +267,50 @@ class _HomePageState extends State<HomePage>
     });
   }
 
+  resetAppNow() {
+    setState(() {
+      polylineCoOrdinates.clear();
+      polylineSet.clear();
+      markerSet.clear();
+      circleSet.clear();
+      rideDetailsContainerHeight = 0;
+      requestContainerHeight = 0;
+      tripContainerHeight = 0;
+      searchContainerHeight = 276;
+      bottomMapPadding = 300;
+      isDrawerOpened = true;
+
+      status = '';
+      nameDriver = '';
+      photoDriver = '';
+      phoneNumberDriver;
+      carDetailsDriver = '';
+      tripStatusDisplay = 'Driver is Arriving';
+    });
+  }
+
+  cancelRideRequest() {
+    // remove ride request form database
+    setState(() {
+      stateOfApp = "normal";
+    });
+  }
+
+  displayRequestContainer() {
+    setState(() {
+      rideDetailsContainerHeight = 0;
+      requestContainerHeight = 220;
+      bottomMapPadding = 200;
+      isDrawerOpened = true;
+    });
+    //send ride request
+  }
+
+  initializeGeoFireListener() {
+    Geofire.initialize("onlineDrivers");
+    Geofire.queryAtLocation(currentPositionOfUser!.latitude, currentPositionOfUser!.longitude, 22);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -253,7 +322,6 @@ class _HomePageState extends State<HomePage>
           backgroundColor: Colors.white10,
           child: ListView(
             children: [
-
               const Divider(
                 height: 1,
                 color: Colors.grey,
@@ -270,19 +338,17 @@ class _HomePageState extends State<HomePage>
                   ),
                   child: Row(
                     children: [
-
                       Image.asset(
                         "assets/images/avatarman.png",
                         width: 60,
                         height: 60,
                       ),
-
-                      const SizedBox(width: 16,),
-
+                      const SizedBox(
+                        width: 16,
+                      ),
                       Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-
                           Text(
                             userName,
                             style: const TextStyle(
@@ -291,19 +357,17 @@ class _HomePageState extends State<HomePage>
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-
-                          const SizedBox(height: 4,),
-
+                          const SizedBox(
+                            height: 4,
+                          ),
                           const Text(
                             "Profile",
                             style: TextStyle(
                               color: Colors.white38,
                             ),
                           ),
-
                         ],
                       ),
-
                     ],
                   ),
                 ),
@@ -315,40 +379,52 @@ class _HomePageState extends State<HomePage>
                 thickness: 1,
               ),
 
-              const SizedBox(height: 10,),
+              const SizedBox(
+                height: 10,
+              ),
 
               //body
               ListTile(
                 leading: IconButton(
-                  onPressed: (){},
-                  icon: const Icon(Icons.info, color: Colors.grey,),
+                  onPressed: () {},
+                  icon: const Icon(
+                    Icons.info,
+                    color: Colors.grey,
+                  ),
                 ),
-                title: const Text("About", style: TextStyle(color: Colors.grey),),
+                title: const Text(
+                  "About",
+                  style: TextStyle(color: Colors.grey),
+                ),
               ),
 
               GestureDetector(
-                onTap: ()
-                {
+                onTap: () {
                   FirebaseAuth.instance.signOut();
 
-                  Navigator.push(context, MaterialPageRoute(builder: (c)=> LoginScreen()));
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (c) => LoginScreen()));
                 },
                 child: ListTile(
                   leading: IconButton(
-                    onPressed: (){},
-                    icon: const Icon(Icons.logout, color: Colors.grey,),
+                    onPressed: () {},
+                    icon: const Icon(
+                      Icons.logout,
+                      color: Colors.grey,
+                    ),
                   ),
-                  title: const Text("Logout", style: TextStyle(color: Colors.grey),),
+                  title: const Text(
+                    "Logout",
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 ),
               ),
-
             ],
           ),
         ),
       ),
       body: Stack(
         children: [
-
           ///google map
           GoogleMap(
             padding: EdgeInsets.only(top: 26, bottom: bottomMapPadding),
@@ -358,8 +434,7 @@ class _HomePageState extends State<HomePage>
             markers: markerSet,
             circles: circleSet,
             initialCameraPosition: googlePlexInitialPosition,
-            onMapCreated: (GoogleMapController mapController)
-            {
+            onMapCreated: (GoogleMapController mapController) {
               controllerGoogleMap = mapController;
               updateMapTheme(controllerGoogleMap!);
 
@@ -378,16 +453,18 @@ class _HomePageState extends State<HomePage>
             top: 36,
             left: 19,
             child: GestureDetector(
-              onTap: ()
-              {
-                sKey.currentState!.openDrawer();
+              onTap: () {
+                if (isDrawerOpened == true) {
+                  sKey.currentState!.openDrawer();
+                } else {
+                  resetAppNow();
+                }
               },
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
-                  boxShadow: const
-                  [
+                  boxShadow: const [
                     BoxShadow(
                       color: Colors.black26,
                       blurRadius: 5,
@@ -396,11 +473,11 @@ class _HomePageState extends State<HomePage>
                     ),
                   ],
                 ),
-                child: const CircleAvatar(
+                child: CircleAvatar(
                   backgroundColor: Colors.grey,
                   radius: 20,
                   child: Icon(
-                    Icons.menu,
+                    isDrawerOpened == true ? Icons.menu : Icons.close,
                     color: Colors.black87,
                   ),
                 ),
@@ -418,57 +495,51 @@ class _HomePageState extends State<HomePage>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-
                   ElevatedButton(
-                    onPressed: () async
-                    {
-                      var responseFromSearchPage = await Navigator.push(context, MaterialPageRoute(builder: (c)=> SearchDestinationPage()));
+                    onPressed: () async {
+                      var responseFromSearchPage = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (c) => SearchDestinationPage()));
 
-                      if(responseFromSearchPage == "placeSelected")
-                      {
+                      if (responseFromSearchPage == "placeSelected") {
                         displayUserRideDetailsContainer();
                       }
                     },
                     style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.grey,
                         shape: const CircleBorder(),
-                        padding: const EdgeInsets.all(24)
-                    ),
+                        padding: const EdgeInsets.all(24)),
                     child: const Icon(
                       Icons.search,
                       color: Colors.white,
                       size: 25,
                     ),
                   ),
-
                   ElevatedButton(
                     onPressed: () {},
                     style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.grey,
                         shape: const CircleBorder(),
-                        padding: const EdgeInsets.all(24)
-                    ),
+                        padding: const EdgeInsets.all(24)),
                     child: const Icon(
                       Icons.home,
                       color: Colors.white,
                       size: 25,
                     ),
                   ),
-
                   ElevatedButton(
                     onPressed: () {},
                     style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.grey,
                         shape: const CircleBorder(),
-                        padding: const EdgeInsets.all(24)
-                    ),
+                        padding: const EdgeInsets.all(24)),
                     child: const Icon(
                       Icons.work,
                       color: Colors.white,
                       size: 25,
                     ),
                   ),
-
                 ],
               ),
             ),
@@ -483,9 +554,10 @@ class _HomePageState extends State<HomePage>
               height: rideDetailsContainerHeight,
               decoration: const BoxDecoration(
                 color: Colors.black54,
-                borderRadius: BorderRadius.only(topLeft: Radius.circular(15), topRight: Radius.circular(15)),
-                boxShadow:
-                [
+                borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(15),
+                    topRight: Radius.circular(15)),
+                boxShadow: [
                   BoxShadow(
                     color: Colors.white12,
                     blurRadius: 15.0,
@@ -499,7 +571,6 @@ class _HomePageState extends State<HomePage>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-
                     Padding(
                       padding: const EdgeInsets.only(left: 16, right: 16),
                       child: SizedBox(
@@ -514,23 +585,29 @@ class _HomePageState extends State<HomePage>
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-
                                   Padding(
-                                    padding: const EdgeInsets.only(left: 8, right: 8),
+                                    padding: const EdgeInsets.only(
+                                        left: 8, right: 8),
                                     child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
                                       children: [
                                         Text(
-                                          (tripDirectionDetailsInfo != null) ? tripDirectionDetailsInfo!.distanceTextString! : "",
+                                          (tripDirectionDetailsInfo != null)
+                                              ? tripDirectionDetailsInfo!
+                                                  .distanceTextString!
+                                              : "",
                                           style: const TextStyle(
                                             fontSize: 16,
                                             color: Colors.white70,
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
-
                                         Text(
-                                          (tripDirectionDetailsInfo != null) ? tripDirectionDetailsInfo!.durationTextString! : "",
+                                          (tripDirectionDetailsInfo != null)
+                                              ? tripDirectionDetailsInfo!
+                                                  .durationTextString!
+                                              : "",
                                           style: const TextStyle(
                                             fontSize: 16,
                                             color: Colors.white70,
@@ -540,25 +617,34 @@ class _HomePageState extends State<HomePage>
                                       ],
                                     ),
                                   ),
-
                                   GestureDetector(
-                                    onTap: (){},
+                                    onTap: () {
+                                      setState(() {
+                                        stateOfApp = "requesting";
+                                      });
+
+                                      displayRequestContainer();
+
+                                      //get nearest available drivers
+
+                                      //Search driver
+                                    },
                                     child: Image.asset(
                                       "assets/images/uberexec.png",
                                       height: 122,
                                       width: 122,
                                     ),
                                   ),
-
                                   Text(
-                                    (tripDirectionDetailsInfo != null) ? "\Rs. ${(cMethods.calculateFareAmount(tripDirectionDetailsInfo!)).toString()}" : "",
+                                    (tripDirectionDetailsInfo != null)
+                                        ? "\Rs. ${(cMethods.calculateFareAmount(tripDirectionDetailsInfo!)).toString()}"
+                                        : "",
                                     style: const TextStyle(
                                       fontSize: 16,
                                       color: Colors.white70,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
-
                                 ],
                               ),
                             ),
@@ -566,7 +652,72 @@ class _HomePageState extends State<HomePage>
                         ),
                       ),
                     ),
+                  ],
+                ),
+              ),
+            ),
+          ),
 
+          ///request container
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              height: requestContainerHeight,
+              decoration: const BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 15.0,
+                      spreadRadius: 0.5,
+                      offset: Offset(0.7, 0.7),
+                    ),
+                  ]),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      height: 12,
+                    ),
+                    SizedBox(
+                      width: 200,
+                      child: LoadingAnimationWidget.flickr(
+                          leftDotColor: Colors.greenAccent,
+                          rightDotColor: Colors.pinkAccent,
+                          size: 50,
+                      ),
+                    ),
+                    SizedBox(
+                      height: 20,
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        resetAppNow();
+                        cancelRideRequest();
+                      },
+                      child: Container(
+                        height: 50,
+                        width: 50,
+                        decoration: BoxDecoration(
+                          color: Colors.white70,
+                          borderRadius: BorderRadius.circular(25),
+                          border: Border.all(width: 1.5, color: Colors.grey),
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          color: Colors.black,
+                          size: 25,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
