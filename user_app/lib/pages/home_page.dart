@@ -19,7 +19,9 @@ import 'package:user_app/authentication/login_screen.dart';
 import 'package:user_app/global/global_var.dart';
 import 'package:user_app/global/trip_var.dart';
 import 'package:user_app/methods/common_methods.dart';
+import 'package:user_app/methods/manage_drivers_method.dart';
 import 'package:user_app/models/direction_details.dart';
+import 'package:user_app/models/online_nearby_drivers.dart';
 import 'package:user_app/pages/search_destination_page.dart';
 import 'package:user_app/widgets/loading_dialog.dart';
 
@@ -49,6 +51,17 @@ class _HomePageState extends State<HomePage> {
   Set<Circle> circleSet = {};
   bool isDrawerOpened = true;
   String stateOfApp = "normal";
+  bool nearbyOnlineDriversKeysLoaded = false;
+  BitmapDescriptor? carIconNearbyDriver;
+
+  makeDriverNearbyCarIcon(){
+    if(carIconNearbyDriver == null){
+      ImageConfiguration configuration = createLocalImageConfiguration(context, size: Size(0.5, 0.5));
+      BitmapDescriptor.fromAssetImage(configuration, "assets/images/tracking.png").then((iconImage){
+        carIconNearbyDriver = iconImage;
+      });
+    }
+  }
 
   void updateMapTheme(GoogleMapController controller) {
     getJsonFileFromThemes("themes/aubergine_style.json")
@@ -83,6 +96,8 @@ class _HomePageState extends State<HomePage> {
         currentPositionOfUser!, context);
 
     await getUserInfoAndCheckBlockStatus();
+
+    await initializeGeoFireListener();
   }
 
   getUserInfoAndCheckBlockStatus() async {
@@ -306,13 +321,82 @@ class _HomePageState extends State<HomePage> {
     //send ride request
   }
 
+  updateAvailableNearbyOnlineDriversOnMap(){
+    setState(() {
+      markerSet.clear();
+    });
+
+    Set<Marker> markersTempSet = Set<Marker>();
+
+    for(OnlineNearbyDrivers eachOnlineNearbyDriver in ManageDriversMethods.nearbyOnlineDriversList){
+      LatLng driverCurrrentPosition = LatLng(eachOnlineNearbyDriver.latDriver!, eachOnlineNearbyDriver.longDriver!);
+
+      Marker driverMarker = Marker(
+        markerId: MarkerId("driver ID = " + eachOnlineNearbyDriver.uidDriver.toString()),
+        position: driverCurrrentPosition,
+        icon: carIconNearbyDriver!,
+      );
+      markersTempSet.add(driverMarker);
+    }
+    setState(() {
+      markerSet = markersTempSet;
+    });
+  }
+
   initializeGeoFireListener() {
     Geofire.initialize("onlineDrivers");
-    Geofire.queryAtLocation(currentPositionOfUser!.latitude, currentPositionOfUser!.longitude, 22);
+    Geofire.queryAtLocation(currentPositionOfUser!.latitude, currentPositionOfUser!.longitude, 22)!
+        .listen((driverEvent)
+    {
+      if(driverEvent != null){
+        var onlineDriverChild = driverEvent["callBack"];
+
+        switch(onlineDriverChild){
+          case Geofire.onKeyEntered:
+            OnlineNearbyDrivers onlineNearbyDrivers = OnlineNearbyDrivers();
+            onlineNearbyDrivers.uidDriver = driverEvent["key"];
+            onlineNearbyDrivers.latDriver = driverEvent["latitude"];
+            onlineNearbyDrivers.longDriver = driverEvent["longitude"];
+            ManageDriversMethods.nearbyOnlineDriversList.add(onlineNearbyDrivers);
+
+            if(nearbyOnlineDriversKeysLoaded == true){
+              //update drivers on google map
+              updateAvailableNearbyOnlineDriversOnMap();
+            }
+            break;
+
+          case Geofire.onKeyExited:
+            ManageDriversMethods.removeDriverFromList(driverEvent["key"]);
+            //update drivers on google map
+            updateAvailableNearbyOnlineDriversOnMap();
+            break;
+
+          case Geofire.onKeyMoved:
+            OnlineNearbyDrivers onlineNearbyDrivers = OnlineNearbyDrivers();
+            onlineNearbyDrivers.uidDriver = driverEvent["key"];
+            onlineNearbyDrivers.latDriver = driverEvent["latitude"];
+            onlineNearbyDrivers.longDriver = driverEvent["longitude"];
+            ManageDriversMethods.updateOnlineNearbyDriversLocation(onlineNearbyDrivers);
+            //update drivers on google map
+            updateAvailableNearbyOnlineDriversOnMap();
+            break;
+
+          case Geofire.onGeoQueryReady:
+          //display nearest online drivers
+            nearbyOnlineDriversKeysLoaded = true;
+
+            //update drivers on google map
+            updateAvailableNearbyOnlineDriversOnMap();
+
+            break;
+        }
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    makeDriverNearbyCarIcon();
     return Scaffold(
       key: sKey,
       drawer: Container(
