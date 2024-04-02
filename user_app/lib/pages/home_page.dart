@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
 import 'dart:typed_data';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/cupertino.dart';
@@ -20,9 +18,11 @@ import 'package:user_app/global/global_var.dart';
 import 'package:user_app/global/trip_var.dart';
 import 'package:user_app/methods/common_methods.dart';
 import 'package:user_app/methods/manage_drivers_method.dart';
+import 'package:user_app/methods/push_notification_service.dart';
 import 'package:user_app/models/direction_details.dart';
 import 'package:user_app/models/online_nearby_drivers.dart';
 import 'package:user_app/pages/search_destination_page.dart';
+import 'package:user_app/widgets/info_dialog.dart';
 import 'package:user_app/widgets/loading_dialog.dart';
 
 class HomePage extends StatefulWidget {
@@ -53,6 +53,8 @@ class _HomePageState extends State<HomePage> {
   String stateOfApp = "normal";
   bool nearbyOnlineDriversKeysLoaded = false;
   BitmapDescriptor? carIconNearbyDriver;
+  DatabaseReference? tripRequestRef;
+  List<OnlineNearbyDrivers>? availableNearbyOnlineDriversList;
 
   makeDriverNearbyCarIcon(){
     if(carIconNearbyDriver == null){
@@ -111,6 +113,7 @@ class _HomePageState extends State<HomePage> {
         if ((snap.snapshot.value as Map)["blockStatus"] == "no") {
           setState(() {
             userName = (snap.snapshot.value as Map)["name"];
+            userPhone = (snap.snapshot.value as Map)["phone"];
           });
         } else {
           FirebaseAuth.instance.signOut();
@@ -306,6 +309,8 @@ class _HomePageState extends State<HomePage> {
 
   cancelRideRequest() {
     // remove ride request form database
+    tripRequestRef!.remove();
+
     setState(() {
       stateOfApp = "normal";
     });
@@ -318,7 +323,9 @@ class _HomePageState extends State<HomePage> {
       bottomMapPadding = 200;
       isDrawerOpened = true;
     });
+
     //send ride request
+    makeTripRequest();
   }
 
   updateAvailableNearbyOnlineDriversOnMap(){
@@ -391,6 +398,145 @@ class _HomePageState extends State<HomePage> {
             break;
         }
       }
+    });
+  }
+
+  makeTripRequest(){
+    tripRequestRef = FirebaseDatabase.instance.ref().child("tripRequests").push();
+
+    var pickUpLocation = Provider.of<AppInfo>(context, listen: false).pickUpLocation;
+    var dropOffDestinationLocation = Provider.of<AppInfo>(context, listen: false).dropOffLocation;
+
+    Map pickUpCoOrdinatesMap =
+    {
+      "latitude": pickUpLocation!.latitudePosition.toString(),
+      "longitude": pickUpLocation.longitudePosition.toString(),
+    };
+
+    Map dropOffDestinationCoOrdinatesMap =
+    {
+      "latitude": dropOffDestinationLocation!.latitudePosition.toString(),
+      "longitude": dropOffDestinationLocation.longitudePosition.toString(),
+    };
+
+    Map driverCoOrdinates =
+    {
+      "latitude": "",
+      "longitude": "",
+    };
+
+    Map dataMap =
+    {
+      "tripID":tripRequestRef!.key,
+      "publishDateTime": DateTime.now().toString(),
+      "userName": userName,
+      "userPhone": userPhone,
+      "userID": userID,
+      "pickUpLatLng": pickUpCoOrdinatesMap,
+      "dropOffLatLng": dropOffDestinationCoOrdinatesMap,
+      "pickUpAddress": pickUpLocation.placeName,
+      "dropOffAddress": dropOffDestinationLocation.placeName,
+
+      "driverID": "waiting",
+      "carDetails": "",
+      "driverLocation": driverCoOrdinates,
+      "driverName": "",
+      "driverPhone": "",
+      "driverPhoto": "",
+      "fareAmount": "",
+      "status": "new",
+    };
+
+    tripRequestRef!.set(dataMap);
+
+  }
+
+  noDriverAvailable(){
+    showDialog(
+        context: context,
+        builder: (BuildContext context) => InfoDialog(
+          title: "No Driver Available",
+          description: "No driver found in the nearby location. Please try again shortly.",
+        ),
+    );
+  }
+
+  searchDriver(){
+    if(availableNearbyOnlineDriversList!.length == 0){
+      cancelRideRequest();
+      resetAppNow();
+      noDriverAvailable();
+      return;
+    }
+
+    var currentDriver = availableNearbyOnlineDriversList![0];
+
+    // send notification to this currentDriver - currentDriver means selected driver
+    sendNotificationToDriver(currentDriver);
+
+    availableNearbyOnlineDriversList!.removeAt(0);
+  }
+  sendNotificationToDriver(OnlineNearbyDrivers currentDriver){
+    //update driver's newTripStatus - assign tripID to current driver
+    DatabaseReference currentDriverRef = FirebaseDatabase.instance
+        .ref()
+        .child("drivers")
+        .child(currentDriver.uidDriver.toString()).child("newTripStatus");
+
+    currentDriverRef.set(tripRequestRef!.key);
+
+    //get current driver device recognition token
+    DatabaseReference tokenOfCurrentDriverRef = FirebaseDatabase.instance
+        .ref()
+        .child("drivers")
+        .child(currentDriver.uidDriver.toString())
+        .child("deviceToken");
+
+    tokenOfCurrentDriverRef.once().then((dataSnapshot){
+      if(dataSnapshot.snapshot.value != null){
+        String deviceToken = dataSnapshot.snapshot.value.toString();
+
+        //send notification
+        PushNotificationService.sendNotificationToSelectedDriver(deviceToken, context, tripRequestRef!.key.toString());
+
+        print("Device Token is:-" + deviceToken);
+      }
+      else{
+        return;
+      }
+      const oneTickPerSec = Duration(seconds: 1);
+
+      var timerCountDown = Timer.periodic(oneTickPerSec, (timer) {
+        requestTimeoutDriver = requestTimeoutDriver - 1;
+
+        //when trip request is not requesting means trip request cancelled - stop timer
+        if(stateOfApp != "requesting"){
+          timer.cancel();
+          currentDriverRef.set("cancelled");
+          currentDriverRef.onDisconnect();
+          requestTimeoutDriver = 20;
+        }
+
+        //when trip request is accepted by online nearest available driver
+        currentDriverRef.onValue.listen((dataSnapshot) {
+          if(dataSnapshot.snapshot.value.toString() == "accepted"){
+            timer.cancel();
+            currentDriverRef.onDisconnect();
+            requestTimeoutDriver = 20;
+          }
+        });
+
+        //if 20 seconds passed trip request - send notification to next nearest online available driver
+        if(requestTimeoutDriver == 0){
+          currentDriverRef.set("timeout");
+          timer.cancel();
+          currentDriverRef.onDisconnect();
+          requestTimeoutDriver = 20;
+
+          //send notification to next nearest online available driver
+          searchDriver();
+        }
+      });
     });
   }
 
@@ -710,8 +856,10 @@ class _HomePageState extends State<HomePage> {
                                       displayRequestContainer();
 
                                       //get nearest available drivers
+                                      availableNearbyOnlineDriversList = ManageDriversMethods.nearbyOnlineDriversList;
 
                                       //Search driver
+                                      searchDriver();
                                     },
                                     child: Image.asset(
                                       "assets/images/uberexec.png",

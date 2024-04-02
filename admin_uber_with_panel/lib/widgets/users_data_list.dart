@@ -83,6 +83,7 @@ class _UsersDataListState extends State<UsersDataList> {
                         await FirebaseDatabase.instance.ref()
                             .child("users")
                             .child(itemsList[index]["id"])
+                        
                             .update(
                             {
                               "blockStatus": "yes",
