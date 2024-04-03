@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:drivers_app/methods/map_theme_methods.dart';
 import 'package:drivers_app/pushNotification/push_notification_system.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -22,36 +23,23 @@ class _HomePageState extends State<HomePage> {
   final Completer<GoogleMapController> googleMapCompleterController =
       Completer<GoogleMapController>();
   GoogleMapController? controllerGoogleMap;
-  Position? currentPositionOfUser;
+  Position? currentPositionOfDriver;
   Color colorToShow = Colors.green;
   String titleToShow = "GO ONLINE NOW";
   bool isDriverAvailable = false;
   DatabaseReference? newTripRequestReference;
+  MapThemeMethods themeMethods = MapThemeMethods();
 
 
-  void updateMapTheme(GoogleMapController controller) {
-    getJsonFileFromThemes("themes/aubergine_style.json")
-        .then((value) => setGoogleMapStyle(value, controller));
-  }
 
-  Future<String> getJsonFileFromThemes(String mapStylePath) async {
-    ByteData byteData = await rootBundle.load(mapStylePath);
-    var list = byteData.buffer
-        .asUint8List(byteData.offsetInBytes, byteData.lengthInBytes);
-    return utf8.decode(list);
-  }
-
-  setGoogleMapStyle(String googleMapStyle, GoogleMapController controller) {
-    controller.setMapStyle(googleMapStyle);
-  }
 
   getCurrentLiveLocationOfDriver() async {
-    Position positionOfUser = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.bestForNavigation);
-    currentPositionOfUser = positionOfUser;
+    Position positionOfUser = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.bestForNavigation);
+    currentPositionOfDriver = positionOfUser;
+    driverCurrentPosition = currentPositionOfDriver;
 
     LatLng possitionOfUserInLatLng = LatLng(
-        currentPositionOfUser!.latitude, currentPositionOfUser!.longitude);
+        currentPositionOfDriver!.latitude, currentPositionOfDriver!.longitude);
 
     CameraPosition cameraPosition =
         CameraPosition(target: possitionOfUserInLatLng, zoom: 15);
@@ -64,8 +52,8 @@ class _HomePageState extends State<HomePage> {
 
     Geofire.setLocation(
         FirebaseAuth.instance.currentUser!.uid,
-        currentPositionOfUser!.latitude,
-        currentPositionOfUser!.longitude,
+        currentPositionOfDriver!.latitude,
+        currentPositionOfDriver!.longitude,
     );
 
     newTripRequestReference = FirebaseDatabase.instance.ref()
@@ -80,13 +68,13 @@ class _HomePageState extends State<HomePage> {
     positionStreamHomePage = Geolocator.getPositionStream()
         .listen((Position position)
     {
-      currentPositionOfUser  = position;
+      currentPositionOfDriver  = position;
 
       if(isDriverAvailable == true) {
         Geofire.setLocation(
           FirebaseAuth.instance.currentUser!.uid,
-          currentPositionOfUser!.latitude,
-          currentPositionOfUser!.longitude,
+          currentPositionOfDriver!.latitude,
+          currentPositionOfDriver!.longitude,
         );
 
         LatLng positionLatLng = LatLng(position.latitude, position.longitude);
@@ -134,7 +122,7 @@ class _HomePageState extends State<HomePage> {
             initialCameraPosition: googlePlexInitialPosition,
             onMapCreated: (GoogleMapController mapController) {
               controllerGoogleMap = mapController;
-              updateMapTheme(controllerGoogleMap!);
+              themeMethods.updateMapTheme(controllerGoogleMap!);
               googleMapCompleterController.complete(controllerGoogleMap);
 
               getCurrentLiveLocationOfDriver();
