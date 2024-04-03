@@ -1,3 +1,5 @@
+import 'package:assets_audio_player/assets_audio_player.dart';
+import 'package:drivers_app/global/global_var.dart';
 import 'package:drivers_app/models/trip_details.dart';
 import 'package:drivers_app/widgets/loading_dialog.dart';
 import 'package:drivers_app/widgets/notification_dialog.dart';
@@ -32,8 +34,8 @@ class PushNotificaionSystem {
     {
       if(messageRemote != null)
       {
-        String? tripID = messageRemote.data["tripID"];
-        retrieveTripRequestInfo(tripID!, context);
+        String tripID = messageRemote.data["tripID"];
+        retrieveTripRequestInfo(tripID, context);
       }
 
     });
@@ -45,8 +47,8 @@ class PushNotificaionSystem {
 
        if(messageRemote != null)
        {
-         String? tripID = messageRemote.data["tripID"];
-         retrieveTripRequestInfo(tripID!, context);
+         String tripID = messageRemote.data["tripID"];
+         retrieveTripRequestInfo(tripID, context);
        }
 
      });
@@ -56,8 +58,8 @@ class PushNotificaionSystem {
      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage? messageRemote) {
 
        if(messageRemote != null) {
-         String? tripID = messageRemote.data["tripID"];
-         retrieveTripRequestInfo(tripID!, context);
+         String tripID = messageRemote.data["tripID"];
+         retrieveTripRequestInfo(tripID, context);
        }
 
      });
@@ -71,11 +73,20 @@ class PushNotificaionSystem {
         builder: (BuildContext context) => LoadingDialog(messageText: "getting details..."),
     );
 
-    DatabaseReference tripRequestRef = FirebaseDatabase.instance.ref().child("tripRequest").child(tripID);
+    DatabaseReference tripRequestRef = FirebaseDatabase.instance.ref().child("tripRequests").child(tripID);
     tripRequestRef.once().then((dataSnapshot)
     {
       Navigator.pop(context);
+
       //play notification sound
+      audioPlayer.open(
+        Audio(
+          "assets/audio/alert_sound.mp3"
+        ),
+      );
+
+      audioPlayer.play();
+      // end code of play notification sound
 
       TripDetails tripDetailsInfo = TripDetails();
       double pickUpLat =  double.parse((dataSnapshot.snapshot.value! as Map)["pickUpLatLng"]["latitude"]);
@@ -86,12 +97,14 @@ class PushNotificaionSystem {
 
       double dropOffLat = double.parse((dataSnapshot.snapshot.value! as Map)["dropOffLatLng"]["latitude"]);
       double dropOffLng = double.parse((dataSnapshot.snapshot.value! as Map)["dropOffLatLng"]["longitude"]);
-      tripDetailsInfo.dropOffLatLng = LatLng(pickUpLat, pickUpLng);
+      tripDetailsInfo.dropOffLatLng = LatLng(dropOffLat, dropOffLng);
 
       tripDetailsInfo.dropOffAddress = (dataSnapshot.snapshot.value! as Map)["dropOffAddress"];
 
       tripDetailsInfo.userName = (dataSnapshot.snapshot.value! as Map)["userName"];
       tripDetailsInfo.userPhone = (dataSnapshot.snapshot.value! as Map)["userPhone"];
+
+      tripDetailsInfo.tripID = tripID;
 
       showDialog(
           context: context,
