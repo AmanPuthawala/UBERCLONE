@@ -4,14 +4,14 @@ import 'package:flutter/material.dart';
 
 import 'earnings_page.dart';
 import 'home_page.dart';
-class MainHomePage extends StatefulWidget {
-  const MainHomePage({super.key});
+class Dashboard extends StatefulWidget {
+  const Dashboard({super.key});
 
   @override
-  State<MainHomePage> createState() => _MainHomePageState();
+  State<Dashboard> createState() => _DashboardState();
 }
 
-class _MainHomePageState extends State<MainHomePage> with SingleTickerProviderStateMixin {
+class _DashboardState extends State<Dashboard> with SingleTickerProviderStateMixin {
 
   TabController? controller;
   int indexSelected = 0;
