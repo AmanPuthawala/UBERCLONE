@@ -1,3 +1,4 @@
+import 'package:drivers_app/pages/dashboard.dart';
 import 'package:drivers_app/pages/home_page.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -57,7 +58,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: Colors.black,
       ),
-       home: FirebaseAuth.instance.currentUser == null ? const LoginScreen() : const HomePage(),
+       home: FirebaseAuth.instance.currentUser == null ? const LoginScreen() : const Dashboard(),
     );
   }
 }

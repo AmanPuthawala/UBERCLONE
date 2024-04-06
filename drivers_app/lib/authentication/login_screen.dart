@@ -1,5 +1,5 @@
 import 'package:drivers_app/authentication/signup_screen.dart';
-import 'package:drivers_app/pages/main_homePage.dart';
+import 'package:drivers_app/pages/dashboard.dart';
 // import 'package:drivers_app/pages/dashboard.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -69,7 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
         if(snap.snapshot.value != null){
           if((snap.snapshot.value as Map)["blockStatus"] == "no") {
             userName = (snap.snapshot.value as Map)["name"];
-            Navigator.push(context, MaterialPageRoute(builder: (c)=> MainHomePage()));
+            Navigator.push(context, MaterialPageRoute(builder: (c)=> Dashboard()));
           }
           else {
             FirebaseAuth.instance.signOut();

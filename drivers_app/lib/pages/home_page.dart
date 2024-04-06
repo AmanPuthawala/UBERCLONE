@@ -13,7 +13,6 @@ import '../global/global_var.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
-  
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -30,11 +29,9 @@ class _HomePageState extends State<HomePage> {
   DatabaseReference? newTripRequestReference;
   MapThemeMethods themeMethods = MapThemeMethods();
 
-
-
-
   getCurrentLiveLocationOfDriver() async {
-    Position positionOfUser = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.bestForNavigation);
+    Position positionOfUser = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.bestForNavigation);
     currentPositionOfDriver = positionOfUser;
     driverCurrentPosition = currentPositionOfDriver;
 
@@ -51,26 +48,27 @@ class _HomePageState extends State<HomePage> {
     Geofire.initialize("onlineDrivers");
 
     Geofire.setLocation(
-        FirebaseAuth.instance.currentUser!.uid,
-        currentPositionOfDriver!.latitude,
-        currentPositionOfDriver!.longitude,
+      FirebaseAuth.instance.currentUser!.uid,
+      currentPositionOfDriver!.latitude,
+      currentPositionOfDriver!.longitude,
     );
 
-    newTripRequestReference = FirebaseDatabase.instance.ref()
+    newTripRequestReference = FirebaseDatabase.instance
+        .ref()
         .child("drivers")
-        .child(FirebaseAuth.instance.currentUser!.uid).child("newTripStatus");
+        .child(FirebaseAuth.instance.currentUser!.uid)
+        .child("newTripStatus");
     newTripRequestReference!.set("waiting");
 
-    newTripRequestReference!.onValue.listen((event) { });
+    newTripRequestReference!.onValue.listen((event) {});
   }
 
   setAndGetLocationUpdates() {
-    positionStreamHomePage = Geolocator.getPositionStream()
-        .listen((Position position)
-    {
-      currentPositionOfDriver  = position;
+    positionStreamHomePage =
+        Geolocator.getPositionStream().listen((Position position) {
+      currentPositionOfDriver = position;
 
-      if(isDriverAvailable == true) {
+      if (isDriverAvailable == true) {
         Geofire.setLocation(
           FirebaseAuth.instance.currentUser!.uid,
           currentPositionOfDriver!.latitude,
@@ -78,11 +76,11 @@ class _HomePageState extends State<HomePage> {
         );
 
         LatLng positionLatLng = LatLng(position.latitude, position.longitude);
-        controllerGoogleMap!.animateCamera(CameraUpdate.newLatLng(positionLatLng));
+        controllerGoogleMap!
+            .animateCamera(CameraUpdate.newLatLng(positionLatLng));
       }
     });
   }
-
 
   goOfflineNow() {
     // stop sharing live location updates
@@ -94,19 +92,37 @@ class _HomePageState extends State<HomePage> {
     newTripRequestReference = null;
   }
 
-  initializePushNotificationSystem(){
+  initializePushNotificationSystem() {
     PushNotificaionSystem notificaionSystem = PushNotificaionSystem();
     notificaionSystem.generateDeviceRegistrationToken();
     notificaionSystem.startListeningForNewNotification(context);
     // notificaionSystem.requestingPermission();
-}
+  }
 
-@override
+  retrieveCurrentDriverInfo() async{
+   await FirebaseDatabase.instance.ref()
+        .child("drivers")
+        .child(FirebaseAuth.instance.currentUser!.uid)
+        .once().then((snap)
+    {
+      driverName = (snap.snapshot.value as Map)["name"];
+      driverPhone = (snap.snapshot.value as Map)["phone"];
+      driverPhoto = (snap.snapshot.value as Map)["photo"];
+      vehicleColor = (snap.snapshot.value as Map)["car_details"]["vehicleColor"];
+      vehicleModel = (snap.snapshot.value as Map)["car_details"]["vehicleModel"];
+      vehicleNumber = (snap.snapshot.value as Map)["car_details"]["vehicleNumber"];
+
+    });
+
+    initializePushNotificationSystem();
+  }
+
+  @override
   void initState() {
     // TODO: implement initState
     super.initState();
 
-    initializePushNotificationSystem();
+    retrieveCurrentDriverInfo();
   }
 
   @override
@@ -149,23 +165,25 @@ class _HomePageState extends State<HomePage> {
                         context: context,
                         isDismissible: false,
                         backgroundColor: Colors.black87,
-                        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(5)),),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(5)),
+                        ),
                         builder: (BuildContext context) {
                           return Container(
                             decoration: const BoxDecoration(
-                              // color: Colors.black45,
-                              // boxShadow: [
-                              //   BoxShadow(
-                              //     color: Colors.black,
-                              //     blurRadius: 0.0,
-                              //     spreadRadius: 0.0,
-                              //     offset: Offset(
-                              //       0.0,
-                              //       0.0
-                              //     ),
-                              //   ),
-                              // ],
-                            ),
+                                // color: Colors.black45,
+                                // boxShadow: [
+                                //   BoxShadow(
+                                //     color: Colors.black,
+                                //     blurRadius: 0.0,
+                                //     spreadRadius: 0.0,
+                                //     offset: Offset(
+                                //       0.0,
+                                //       0.0
+                                //     ),
+                                //   ),
+                                // ],
+                                ),
                             height: 221,
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
@@ -209,22 +227,26 @@ class _HomePageState extends State<HomePage> {
                                             Navigator.pop(context);
                                           },
                                           style: const ButtonStyle(
-                                            shape: MaterialStatePropertyAll(
-                                              RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.all(Radius.circular(5)),
+                                              shape: MaterialStatePropertyAll(
+                                                RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.all(
+                                                          Radius.circular(5)),
+                                                ),
                                               ),
-                                            ),
-                                            backgroundColor: MaterialStatePropertyAll(Colors.blue)
-                                          ),
+                                              backgroundColor:
+                                                  MaterialStatePropertyAll(
+                                                      Colors.blue)),
                                           child: const Text(
                                             "BACK",
-                                            style: TextStyle(color: Colors.white),
+                                            style:
+                                                TextStyle(color: Colors.white),
                                           ),
                                         ),
                                       ),
-                                      const SizedBox(width: 16,),
-
-
+                                      const SizedBox(
+                                        width: 16,
+                                      ),
                                       Expanded(
                                         child: ElevatedButton(
                                           onPressed: () {
@@ -246,7 +268,6 @@ class _HomePageState extends State<HomePage> {
                                               // go offline
                                               goOfflineNow();
 
-
                                               Navigator.pop(context);
 
                                               setState(() {
@@ -257,15 +278,20 @@ class _HomePageState extends State<HomePage> {
                                             }
                                           },
                                           style: ButtonStyle(
-                                            shape: const MaterialStatePropertyAll(
-                                              RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.all(Radius.circular(5)),
+                                              shape:
+                                                  const MaterialStatePropertyAll(
+                                                RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.all(
+                                                          Radius.circular(5)),
+                                                ),
                                               ),
-                                            ),
-                                              backgroundColor: MaterialStatePropertyAll(
-                                                  (titleToShow == "GO ONLINE NOW") ? Colors.green : Colors.pink
-                                              )
-                                          ),
+                                              backgroundColor:
+                                                  MaterialStatePropertyAll(
+                                                      (titleToShow ==
+                                                              "GO ONLINE NOW")
+                                                          ? Colors.green
+                                                          : Colors.pink)),
 
                                           // style: ElevatedButton.styleFrom(
                                           //     backgroundColor: (titleToShow == "GO ONLINE NOW")
@@ -274,7 +300,8 @@ class _HomePageState extends State<HomePage> {
 
                                           child: const Text(
                                             "CONFIRM",
-                                            style: TextStyle(color: Colors.white),
+                                            style:
+                                                TextStyle(color: Colors.white),
                                           ),
                                         ),
                                       ),
