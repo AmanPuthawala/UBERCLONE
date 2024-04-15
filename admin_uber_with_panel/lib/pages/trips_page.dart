@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../methods/common_methods.dart';
+import '../widgets/trips_data_list.dart';
 
 class TripsPage extends StatefulWidget {
   static const String id = "\webPageTrips";
@@ -50,8 +51,8 @@ class _TripsPageState extends State<TripsPage> {
                 ],
               ),
 
-              //Display data
-
+              //display data
+              TripsDataList(),
             ],
           ),
         ),

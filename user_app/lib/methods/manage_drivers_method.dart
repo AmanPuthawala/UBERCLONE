@@ -16,6 +16,6 @@ class ManageDriversMethods{
     int index =  nearbyOnlineDriversList.indexWhere((driver) => driver.uidDriver == nearbyOnlineDriverInformation.uidDriver);
 
     nearbyOnlineDriversList[index].latDriver = nearbyOnlineDriverInformation.latDriver;
-    nearbyOnlineDriversList[index].longDriver = nearbyOnlineDriverInformation.longDriver;
+    nearbyOnlineDriversList[index].lngDriver = nearbyOnlineDriverInformation.lngDriver;
   }
 }
