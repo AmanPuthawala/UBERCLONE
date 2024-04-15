@@ -51,6 +51,7 @@ dependencies:
   flutter_polyline_points:
   loading_animation_widget:
   flutter_geofire:
+  url_launcher:
 
 #flutter_icons:
 #  android: "launcher_icon"

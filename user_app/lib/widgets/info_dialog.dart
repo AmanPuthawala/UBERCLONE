@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+// import 'package:restart_app/restart_app.dart';
 
 class InfoDialog extends StatefulWidget {
   String? title, description;
@@ -57,6 +58,8 @@ class _InfoDialogState extends State<InfoDialog> {
                   child: ElevatedButton(
                     onPressed: (){
                       Navigator.pop(context);
+
+                      // Restart.restartApp();
                     },
                     child: const Text("OK", style: TextStyle(color: Colors.white),),
                   ),
